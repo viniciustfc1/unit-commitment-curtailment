@@ -1,5 +1,5 @@
 from pyscipopt import Model, quicksum
-from functions import get_system, generate_graph_result, get_dict_result, save_sheet
+from functions.main_functions import get_system, generate_graph_result, get_dict_result, save_sheet
 
 # Importando o sistema
 system = get_system()
