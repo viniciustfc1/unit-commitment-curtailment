@@ -112,6 +112,17 @@ def get_dict_result(system, model):
         if match_def:
             t = int(match_def.group(1))
             results_dict[t]["Deficit"] = round(value, 8)
+        
+        # Solar e Curtailment
+        match_solar = re.match(r"gr_ren_(\d+)", name)
+        if match_solar:
+            t = int(match_solar.group(1))
+            results_dict[t]["Geracao Solar"] = round(value, 8)
+            
+        match_curt = re.match(r"curt_ren_(\d+)", name)
+        if match_curt:
+            t = int(match_curt.group(1))
+            results_dict[t]["Curtailment"] = round(value, 8)
 
     # Adiciona geração total UHE, custo de UTEs, custo de vertimento e demanda
     for t in range(total_points):
@@ -149,7 +160,7 @@ def get_dict_result(system, model):
         columns_list += [f"Vol turbinado UHE {uhe_id+1}", f"Vol vertido UHE {uhe_id+1}", f"Vol final UHE {uhe_id+1}", f"Geracao UHE {uhe_id+1}", f"Custo vertimento UHE {uhe_id+1}"]
 
     # Déficit e Demanda no final
-    columns_list += ["Deficit", "Demanda"]
+    columns_list += ["Geracao Solar", "Curtailment", "Deficit", "Demanda"]
 
     df_final = df_final[columns_list]
 
@@ -222,6 +233,8 @@ def generate_graph_result(n_ute, n_uhe, df_final, file_name, fob):
     html_parts.append(plot_to_html(create_multiline_fig(eixo_x, list_ger_ute, [f'UTE-{i+1}' for i in range(n_ute)], "Geração UTE's", "Geração (kW)")))
     html_parts.append(plot_to_html(create_multiline_fig(eixo_x, list_ger_uhe, [f'UHE-{i+1}' for i in range(n_uhe)], "Geração UHE's", "Geração (kW)")))
     html_parts.append(plot_to_html(create_multiline_fig(eixo_x, list_vol_final_uhe, [f'UHE-{i+1}' for i in range(n_uhe)], "Volume Final UHE's", "Volume (hm³)")))
+    html_parts.append(plot_to_html(create_multiline_fig(eixo_x, [df_final['Geracao Solar']], ['Solar'], "Geração Solar", "Geração (kW)")))
+    html_parts.append(plot_to_html(create_multiline_fig(eixo_x, [df_final['Curtailment']], ['Curtailment'], "Curtailment", "Geração (kW)")))
     html_parts.append(plot_to_html(create_multiline_fig(eixo_x, [df_final['Deficit']], ['Déficit'], "Déficit Horário", "Déficit (kW)")))
 
     # Tabela

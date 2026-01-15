@@ -13,7 +13,14 @@ model = Model("Unit_Commitment")
 model.setIntParam("display/verblevel", 0)
 
 ## Inicializa variaveis de decisão
-vf, vt, vv, gt, ut, yt, wt, deficit = {}, {}, {}, {}, {}, {}, {}, {},
+vf, vt, vv, gt, ut, yt, wt, deficit, g_solar, curt, alpha = {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+
+# Inicialização de custos
+C_curt = 311
+C_solar = 10
+
+P_r_max = 500
+availability = 0.8  # Fator de disponibilidade da geração renovável
 
 for t in range(total_points):
     for uhe in range(n_uhe):
@@ -32,13 +39,20 @@ for t in range(total_points):
         wt[(ute, t)] = model.addVar(name=f"WT_UTE{ute}_POINT{t}", vtype="B")
         yt[(ute, t)] = model.addVar(name=f"YT_UTE{ute}_POINT{t}", vtype="C", lb=0, ub=1)
 
+    ## Variáveis: geração renovável utilizada e curtailment
+    g_solar[t] = model.addVar(name = f'gr_ren_{t}', vtype = 'C', lb = 0, ub = availability * P_r_max)
+    curt[t] = model.addVar(name = f'curt_ren_{t}', vtype = 'C', lb = 0)
+
+    ## Custo futuro
+    alpha[t] = model.addVar(name = f'Custo Futuro', vtype = 'C', lb = 0)
+    
     ## Definindo variável de deficit
     deficit[t] = model.addVar(name=f"DEFICIT{t}", vtype="C", lb=0)
 
     ## Restrições: Atendimento da demanda
     uhe_gen = quicksum(vt[(uhe, t)] * system["UHE"][uhe]["Prod"] for uhe in range(n_uhe))
     ute_gen = quicksum(gt[(ute, t)] for ute in range(n_ute))
-    model.addCons(uhe_gen + ute_gen + deficit[t] == system["DGer"]["Carga"][t], name=f"Atendimento da demanda {t}")
+    model.addCons(uhe_gen + ute_gen + deficit[t] + g_solar[t] == system["DGer"]["Carga"][t], name=f"Atendimento da demanda {t}")
 
 
 for t in range(total_points):
@@ -99,8 +113,10 @@ for t in range(total_points):
 ute_cost_total = quicksum(gt[(ute, t)] * system["UTE"][ute]["Custo"] for ute in range(n_ute) for t in range(total_points))
 vv_cost_total = quicksum(vv[(uhe, t)] * system["UHE"][uhe]["VertCost"] for uhe in range(n_uhe) for t in range(total_points))
 deficit_cost_total = quicksum(deficit[t] * system["DGer"]["CDef"] for t in range(total_points))
+curtailment_cost = quicksum(curt[t] * C_curt for t in range(total_points))
+solar_painels_cost = quicksum(g_solar[t] * C_solar for t in range(total_points))
 
-model.setObjective(ute_cost_total + vv_cost_total + deficit_cost_total, sense="minimize")
+model.setObjective(ute_cost_total + vv_cost_total + deficit_cost_total + curtailment_cost + solar_painels_cost, sense="minimize")
 
 ## Otimiza
 model.optimize()
