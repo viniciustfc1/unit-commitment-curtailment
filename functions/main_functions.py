@@ -77,11 +77,6 @@ def load_solar_normalization(file_path="./Simples Geração Solar Normalizado.cs
     - 'mapping': dicionário mapeando cada data para seu valor
     """
     df = pd.read_csv(file_path, sep=',')
-    print(df.columns)
-
-    # Suporta múltiplos nomes possíveis para a coluna de data
-    possible_date_cols = ['Data', 'Data Dica', 'Date']
-    date_col = next((c for c in possible_date_cols if c in df.columns), None)
 
     # Suporta variações na coluna de normalização (sem/ com acento e variações comuns)
     possible_norm_cols = [
@@ -89,25 +84,15 @@ def load_solar_normalization(file_path="./Simples Geração Solar Normalizado.cs
     ]
     norm_col = next((c for c in possible_norm_cols if c in df.columns), None)
 
-    if date_col is None or norm_col is None:
+    if norm_col is None:
         raise KeyError(
-            f"O arquivo CSV deve conter uma coluna de data ({possible_date_cols}) e uma coluna de normalização ({possible_norm_cols}).\n"
+            f"O arquivo CSV deve conter uma coluna de normalização ({possible_norm_cols}).\n"
             f"Colunas encontradas: {list(df.columns)}"
         )
 
-    # Limpa e converte valores numéricos (ex.: '1.234,56' -> 1234.56)
-    series = df[norm_col].astype(str)
-    series = series.str.replace('.', '', regex=False)
-    series = series.str.replace(',', '.', regex=False)
-    series = series.astype(float)
+    norm_list = df[norm_col].astype(float).tolist()
 
-    data_list = df[date_col].astype(str).tolist()
-    norm_list = series.tolist()
-
-    return {
-        'Data': data_list,
-        'Geração Solar': norm_list
-    }
+    return  norm_list
 
 def get_dict_result(system, model):
     total_points = len(system["DGer"]["Carga"])
