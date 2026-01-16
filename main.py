@@ -1,5 +1,5 @@
 from pyscipopt import Model, quicksum
-from functions.main_functions import get_system, generate_graph_result, get_dict_result, save_sheet
+from functions.main_functions import *
 
 # Importando o sistema
 system = get_system()
@@ -18,6 +18,9 @@ vf, vt, vv, gt, ut, yt, wt, deficit, g_solar, curt, alpha = {}, {}, {}, {}, {}, 
 # Inicialização de custos
 C_curt = 311
 C_solar = 10
+
+# Inicialiação de parâmetros de geração renovável
+solar_data = load_solar_normalization()
 
 P_r_max = 500
 availability = 0.8  # Fator de disponibilidade da geração renovável
@@ -115,6 +118,7 @@ vv_cost_total = quicksum(vv[(uhe, t)] * system["UHE"][uhe]["VertCost"] for uhe i
 deficit_cost_total = quicksum(deficit[t] * system["DGer"]["CDef"] for t in range(total_points))
 curtailment_cost = quicksum(curt[t] * C_curt for t in range(total_points))
 solar_painels_cost = quicksum(g_solar[t] * C_solar for t in range(total_points))
+alpha_cost = quicksum(alpha[t] for t in range(total_points))
 
 model.setObjective(ute_cost_total + vv_cost_total + deficit_cost_total + curtailment_cost + solar_painels_cost, sense="minimize")
 
